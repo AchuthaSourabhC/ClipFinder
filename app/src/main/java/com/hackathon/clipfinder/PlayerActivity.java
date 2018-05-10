@@ -16,10 +16,13 @@
 package com.hackathon.clipfinder;
 
 import android.annotation.SuppressLint;
+import android.app.ProgressDialog;
 import android.net.Uri;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
+import android.util.Log;
 import android.view.View;
+import android.widget.Toast;
 
 import com.google.android.exoplayer2.DefaultLoadControl;
 import com.google.android.exoplayer2.DefaultRenderersFactory;
@@ -33,6 +36,19 @@ import com.google.android.exoplayer2.trackselection.DefaultTrackSelector;
 import com.google.android.exoplayer2.ui.PlayerView;
 import com.google.android.exoplayer2.upstream.DefaultHttpDataSourceFactory;
 import com.google.android.exoplayer2.util.Util;
+import com.hackathon.clipfinder.Service.ClipService;
+import com.hackathon.clipfinder.models.ClipPlaylist;
+import com.hackathon.clipfinder.models.ClipSearchRequest;
+import com.hackathon.clipfinder.models.SceneMetadata;
+import com.hackathon.clipfinder.models.SceneMetadataList;
+
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
+
+import retrofit2.Call;
+import retrofit2.Callback;
+import retrofit2.Response;
 
 
 /**
@@ -46,13 +62,17 @@ public class PlayerActivity extends AppCompatActivity {
   private boolean playWhenReady;
   private int currentWindow = 0;
   private long playbackPosition = 0;
-
+  ClipService clipService = new ClipService();
+  APIInterface apiInterface;
+  List<SceneMetadata> sceneMetadataList;
 
   @Override
   protected void onCreate(Bundle savedInstanceState) {
     super.onCreate(savedInstanceState);
     setContentView(R.layout.activity_player);
     playerView = findViewById(R.id.video_view);
+
+
   }
 
   private void initializePlayer() {
@@ -65,47 +85,68 @@ public class PlayerActivity extends AppCompatActivity {
     player.setPlayWhenReady(playWhenReady);
     player.seekTo(currentWindow, playbackPosition);
 
-    Uri uri = Uri.parse(getString(R.string.media_url_mp4_2));
+    Uri uri = Uri.parse(getString(R.string.media_url_mp4_1));
     MediaSource mediaSource = buildMediaSource(uri);
     player.prepare(mediaSource, true, false);
   }
 
   private MediaSource buildMediaSource(Uri uri) {
+      List<ExtractorMediaSource> playlistSource = new ArrayList<>();
+
+
     // these are reused for both media sources we create below
     DefaultExtractorsFactory extractorsFactory =
             new DefaultExtractorsFactory();
     DefaultHttpDataSourceFactory dataSourceFactory =
             new DefaultHttpDataSourceFactory( "user-agent");
 
+      for(SceneMetadata sceneMetadata : sceneMetadataList){
+          Uri sceneUri = Uri.parse(sceneMetadata.getUrl());
+          ExtractorMediaSource videoSource =
+                  new ExtractorMediaSource.Factory(
+                          new DefaultHttpDataSourceFactory("exoplayer-codelab")).
+                          createMediaSource(sceneUri);
+          playlistSource.add(videoSource);
+      }
+
     ExtractorMediaSource videoSource =
             new ExtractorMediaSource.Factory(
                     new DefaultHttpDataSourceFactory("exoplayer-codelab")).
                     createMediaSource(uri);
 
-    Uri audioUri = Uri.parse(getString(R.string.media_url_mp3));
+      playlistSource.add(videoSource);
+    Uri audioUri = Uri.parse(getString(R.string.media_url_mp4_2));
     ExtractorMediaSource audioSource =
             new ExtractorMediaSource.Factory(
                     new DefaultHttpDataSourceFactory("exoplayer-codelab")).
                     createMediaSource(audioUri);
-
-    return new ConcatenatingMediaSource( videoSource, audioSource);
+    playlistSource.add(audioSource);
+    ExtractorMediaSource [] sourceArray =  playlistSource.toArray(new ExtractorMediaSource[playlistSource.size()]);
+    return new ConcatenatingMediaSource( sourceArray);
   }
 
   @Override
   public void onStart() {
     super.onStart();
-    if (Util.SDK_INT > 23) {
-      initializePlayer();
-    }
+      Bundle bundle =  getIntent().getExtras();
+      ClipPlaylist clipPlaylist = (ClipPlaylist) bundle.getSerializable("playlist");
+      sceneMetadataList = clipPlaylist.getSceneMetadataList();
+      if (Util.SDK_INT > 23) {
+          initializePlayer();
+      }
   }
 
   @Override
   public void onResume() {
     super.onResume();
-    hideSystemUi();
-    if ((Util.SDK_INT <= 23 || player == null)) {
-      initializePlayer();
-    }
+      Bundle bundle =  getIntent().getExtras();
+      ClipPlaylist clipPlaylist = (ClipPlaylist) bundle.getSerializable("playlist");
+      sceneMetadataList = clipPlaylist.getSceneMetadataList();
+      if (Util.SDK_INT > 23) {
+          initializePlayer();
+      }
+
+
   }
 
   @SuppressLint("InlinedApi")

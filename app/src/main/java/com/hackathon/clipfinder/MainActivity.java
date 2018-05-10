@@ -1,5 +1,8 @@
 package com.hackathon.clipfinder;
 
+import android.content.Context;
+import android.content.Intent;
+import android.content.SharedPreferences;
 import android.content.res.Resources;
 import android.graphics.Rect;
 import android.os.Bundle;
@@ -10,6 +13,7 @@ import android.support.v7.widget.DefaultItemAnimator;
 import android.support.v7.widget.GridLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.Toolbar;
+import android.util.Log;
 import android.util.TypedValue;
 import android.view.View;
 import android.widget.ImageView;
@@ -19,7 +23,9 @@ import com.bumptech.glide.Glide;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
+import com.google.gson.Gson;
 import com.hackathon.clipfinder.adapters.ClipPlaylistsAdapter;
 import com.hackathon.clipfinder.listeners.RecyclerTouchListener;
 import com.hackathon.clipfinder.models.ClipPlaylist;
@@ -29,6 +35,9 @@ public class MainActivity extends AppCompatActivity {
     private RecyclerView recyclerView;
     private ClipPlaylistsAdapter adapter;
     private List<ClipPlaylist> albumList;
+
+    SharedPreferences sharedPrefs;
+    Gson gson = new Gson();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -44,6 +53,8 @@ public class MainActivity extends AppCompatActivity {
         albumList = new ArrayList<>();
         adapter = new ClipPlaylistsAdapter(this, albumList);
 
+        sharedPrefs = getApplication().getSharedPreferences("Playlists", Context.MODE_PRIVATE);
+
         RecyclerView.LayoutManager mLayoutManager = new GridLayoutManager(this, 2);
         recyclerView.setLayoutManager(mLayoutManager);
         recyclerView.addItemDecoration(new GridSpacingItemDecoration(2, dpToPx(10), true));
@@ -54,6 +65,14 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onClick(View view, int position) {
                 Toast.makeText(getApplicationContext(), "ClipPlaylist"+ position + " is selected!", Toast.LENGTH_SHORT).show();
+                Intent intent = new Intent(MainActivity.this, PlayerActivity.class);
+                ClipPlaylist clipPlaylist = albumList.get(position);
+
+                Bundle bundle = new Bundle();
+                bundle.putSerializable("playlist", clipPlaylist);
+                intent.putExtras(bundle);
+                startActivity(intent);
+
             }
 
             @Override
@@ -120,11 +139,24 @@ public class MainActivity extends AppCompatActivity {
                 R.drawable.album10,
                 R.drawable.album11};
 
+
+
+        Map<String, ?> prefs = sharedPrefs.getAll();
+        Log.i("Playlists", "Playlists "+ prefs);
+        for(Object value: prefs.values()){
+            String playlistString = (String) value;
+            Log.i("String", "String PLaylist "+ playlistString );
+            ClipPlaylist clipPlaylist = gson.fromJson(playlistString, ClipPlaylist.class);
+            albumList.add(clipPlaylist);
+        }
+        /*
         ClipPlaylist a = new ClipPlaylist("Romance", 13, covers[0]);
         albumList.add(a);
 
         a = new ClipPlaylist("Xscpae", 8, covers[1]);
         albumList.add(a);
+
+
 
         a = new ClipPlaylist("Maroon 5", 11, covers[2]);
         albumList.add(a);
@@ -151,6 +183,7 @@ public class MainActivity extends AppCompatActivity {
         albumList.add(a);
 
         adapter.notifyDataSetChanged();
+        */
     }
 
     /**
