@@ -8,6 +8,7 @@ import android.graphics.Rect;
 import android.os.Bundle;
 import android.support.design.widget.AppBarLayout;
 import android.support.design.widget.CollapsingToolbarLayout;
+import android.support.design.widget.FloatingActionButton;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.DefaultItemAnimator;
 import android.support.v7.widget.GridLayoutManager;
@@ -55,6 +56,8 @@ public class MainActivity extends AppCompatActivity {
 
         sharedPrefs = getApplication().getSharedPreferences("Playlists", Context.MODE_PRIVATE);
 
+
+
         RecyclerView.LayoutManager mLayoutManager = new GridLayoutManager(this, 2);
         recyclerView.setLayoutManager(mLayoutManager);
         recyclerView.addItemDecoration(new GridSpacingItemDecoration(2, dpToPx(10), true));
@@ -64,7 +67,6 @@ public class MainActivity extends AppCompatActivity {
         recyclerView.addOnItemTouchListener(new RecyclerTouchListener(getApplicationContext(), recyclerView, new RecyclerTouchListener.ClickListener() {
             @Override
             public void onClick(View view, int position) {
-                Toast.makeText(getApplicationContext(), "ClipPlaylist"+ position + " is selected!", Toast.LENGTH_SHORT).show();
                 Intent intent = new Intent(MainActivity.this, PlayerActivity.class);
                 ClipPlaylist clipPlaylist = albumList.get(position);
 
@@ -88,12 +90,29 @@ public class MainActivity extends AppCompatActivity {
         } catch (Exception e) {
             e.printStackTrace();
         }
+
+        FloatingActionButton fab = findViewById(R.id.fab);
+        fab.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                Intent intent = new Intent(MainActivity.this, CreatePlaylistActivity.class);
+                startActivityForResult(intent, 1);
+            }
+        });
     }
 
-    /**
-     * Initializing collapsing toolbar
-     * Will show and hide the toolbar title on scroll
-     */
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        albumList.clear();
+        prepareAlbums();
+        adapter.notifyDataSetChanged();
+    }
+
+
+        /**
+         * Initializing collapsing toolbar
+         * Will show and hide the toolbar title on scroll
+         */
     private void initCollapsingToolbar() {
         final CollapsingToolbarLayout collapsingToolbar =
                 (CollapsingToolbarLayout) findViewById(R.id.collapsing_toolbar);
@@ -145,9 +164,11 @@ public class MainActivity extends AppCompatActivity {
         Log.i("Playlists", "Playlists "+ prefs);
         for(Object value: prefs.values()){
             String playlistString = (String) value;
-            Log.i("String", "String PLaylist "+ playlistString );
+            Log.i("String", "String Playlist "+ playlistString );
             ClipPlaylist clipPlaylist = gson.fromJson(playlistString, ClipPlaylist.class);
-            albumList.add(clipPlaylist);
+            if(clipPlaylist != null && clipPlaylist.getSceneMetadataList().size() > 0) {
+                albumList.add(clipPlaylist);
+            }
         }
         /*
         ClipPlaylist a = new ClipPlaylist("Romance", 13, covers[0]);

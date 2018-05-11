@@ -21,6 +21,7 @@ import android.os.AsyncTask;
 import android.os.Build;
 import android.os.Bundle;
 import android.provider.ContactsContract;
+import android.support.v7.widget.Toolbar;
 import android.text.TextUtils;
 import android.util.Log;
 import android.view.KeyEvent;
@@ -32,6 +33,7 @@ import android.widget.AutoCompleteTextView;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.google.gson.Gson;
 import com.hackathon.clipfinder.models.ClipPlaylist;
@@ -72,6 +74,8 @@ public class CreatePlaylistActivity extends AppCompatActivity  {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_save_playlist);
+        Toolbar myToolbar = (Toolbar) findViewById(R.id.toolbar);
+        setSupportActionBar(myToolbar);
 
         covers = new int[]{
                 R.drawable.album1,
@@ -179,15 +183,16 @@ public class CreatePlaylistActivity extends AppCompatActivity  {
             // TODO: attempt authentication against a network service.
 
             Log.i("Task", "Category: "+ category + " Taq:" + tag );
-            ClipSearchRequest clipSearchRequest = new ClipSearchRequest();
-            clipSearchRequest.setCategory(category);
-            clipSearchRequest.setMovieName(tag);
-            Call<List<SceneMetadata>> sceneMetadataCall = apiInterface.searchClip(clipSearchRequest);
+
             try {
+                ClipSearchRequest clipSearchRequest = new ClipSearchRequest();
+                clipSearchRequest.setCategory(category);
+                clipSearchRequest.setMovieName(tag);
+                Call<List<SceneMetadata>> sceneMetadataCall = apiInterface.searchClip(clipSearchRequest);
                 int cover = R.drawable.action;
                 if(category.equals("COMEDY")){
                      cover = R.drawable.comedy;
-                }else if(category.equals("ACTION")){
+                }else if(category.equals("action")){
                      cover = R.drawable.action;
                 }else if(category.equals("ROMANCE")){
                      cover = R.drawable.romance;
@@ -196,21 +201,25 @@ public class CreatePlaylistActivity extends AppCompatActivity  {
                 }
 
                 List<SceneMetadata> sceneMetadataList = sceneMetadataCall.execute().body();
-                ClipPlaylist clipPlaylist = new ClipPlaylist(tag, category,
-                        sceneMetadataList.size(), cover, sceneMetadataList);
+                if(sceneMetadataList != null  && sceneMetadataList.size() > 0) {
+                    ClipPlaylist clipPlaylist = new ClipPlaylist(tag, category,
+                            sceneMetadataList.size(), cover, sceneMetadataList);
 
-                String response = gson.toJson(clipPlaylist);
-                Log.i("Scene", "Scenes: "+ response);
+                    String response = gson.toJson(clipPlaylist);
+                    Log.i("Scene", "Scene: " + response);
 
-                SharedPreferences.Editor editor = sharedPref.edit();
+                    SharedPreferences.Editor editor = sharedPref.edit();
 
-                editor.putString(category+":"+tag, response);
-                editor.apply();
+                    editor.putString(category + ":" + tag, response);
+                    editor.apply();
+                } else{
+                    return false;
+                }
             } catch (IOException e) {
                 e.printStackTrace();
+                return false;
             }
 
-            // TODO: register the new account here.
             return true;
         }
 
@@ -219,9 +228,9 @@ public class CreatePlaylistActivity extends AppCompatActivity  {
             showProgress(false);
 
             if (success) {
-                //finish();
-                Intent intent = new Intent(CreatePlaylistActivity.this, MainActivity.class);
-                startActivity(intent);
+                finish();
+            }else{
+                Toast.makeText(getApplicationContext(), "No Clips Found", Toast.LENGTH_LONG).show();
             }
         }
 

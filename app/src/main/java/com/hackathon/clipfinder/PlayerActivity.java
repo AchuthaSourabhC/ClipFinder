@@ -85,12 +85,11 @@ public class PlayerActivity extends AppCompatActivity {
     player.setPlayWhenReady(playWhenReady);
     player.seekTo(currentWindow, playbackPosition);
 
-    Uri uri = Uri.parse(getString(R.string.media_url_mp4_1));
-    MediaSource mediaSource = buildMediaSource(uri);
+    MediaSource mediaSource = buildMediaSource();
     player.prepare(mediaSource, true, false);
   }
 
-  private MediaSource buildMediaSource(Uri uri) {
+  private MediaSource buildMediaSource() {
       List<ExtractorMediaSource> playlistSource = new ArrayList<>();
 
 
@@ -108,19 +107,6 @@ public class PlayerActivity extends AppCompatActivity {
                           createMediaSource(sceneUri);
           playlistSource.add(videoSource);
       }
-
-    ExtractorMediaSource videoSource =
-            new ExtractorMediaSource.Factory(
-                    new DefaultHttpDataSourceFactory("exoplayer-codelab")).
-                    createMediaSource(uri);
-
-      playlistSource.add(videoSource);
-    Uri audioUri = Uri.parse(getString(R.string.media_url_mp4_2));
-    ExtractorMediaSource audioSource =
-            new ExtractorMediaSource.Factory(
-                    new DefaultHttpDataSourceFactory("exoplayer-codelab")).
-                    createMediaSource(audioUri);
-    playlistSource.add(audioSource);
     ExtractorMediaSource [] sourceArray =  playlistSource.toArray(new ExtractorMediaSource[playlistSource.size()]);
     return new ConcatenatingMediaSource( sourceArray);
   }
